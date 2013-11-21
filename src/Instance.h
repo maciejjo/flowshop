@@ -3,6 +3,7 @@
 
 #include "Job.h"
 #include "Range.h"
+#include "Machine.h"
 
 #include <vector>
 #include <queue>
@@ -15,6 +16,7 @@ class Instance {
     vector<Job> jobs;
     Instance(queue<Range> *ranges);
 
+    int RandomScheduling(Machine machines[3]);
     vector<Job> GetReadyJobs(int moment);
     void SortJobs();
 

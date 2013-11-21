@@ -14,7 +14,7 @@ int Job::last_id = 0;
 int main() {
 
   int liczba_przedzialow = 2;
-  int liczba_zadan = 10;
+  int liczba_zadan = 10000;
   int max_czas_gotowosci = 10;
 
   srand(time(NULL));
@@ -33,10 +33,10 @@ int main() {
   for(unsigned int i = 0; i < instancja->jobs.size(); i++)
     printf("(main) Wektor zadań w instancji: Zadanie %d [%d | %6d %6d %6d]\n", instancja->jobs[i].id, instancja->jobs[i].ready_time, instancja->jobs[i].operation_times[0], instancja->jobs[i].operation_times[1], instancja->jobs[i].operation_times[2]);
 
-  /*
+
   // Tworzenie maszyn
   Machine *maszyny = new Machine[MACHINES];
-  */
+
 
   /*
   // Test sortowania zadań
@@ -46,7 +46,8 @@ int main() {
     printf("(main) Wektor zadań w instancji: Zadanie %d [%d | %6d %6d %6d]\n", instancja->jobs[i].id, instancja->jobs[i].ready_time, instancja->jobs[i].operation_times[0], instancja->jobs[i].operation_times[1], instancja->jobs[i].operation_times[2]);
   */
 
-  // Wyświetlanie gotowości zadań
+  /*
+  // Test gotowości zadań
   for(int i = 0; i <= max_czas_gotowosci; i++) {
     printf("(main) W momencie %d gotowe są zadania:", i);
     vector <Job> gotowe = instancja->GetReadyJobs(i);
@@ -56,6 +57,11 @@ int main() {
     }
     printf("\n");
   }
+  */
+
+  instancja->RandomScheduling(maszyny);
+  delete[] maszyny;
+  delete instancja;
 
   return EXIT_SUCCESS;
 }
