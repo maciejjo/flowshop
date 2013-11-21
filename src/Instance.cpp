@@ -3,6 +3,8 @@
 #include <cstdio>
 #include <cstdlib>
 
+#include <algorithm>
+
 /*
   for(int i = 0; i < number_of_intervals; i++) {
     for(int j = 0; j < intervals[i][0]; j++) {
@@ -26,7 +28,7 @@ Instance::Instance(queue<Range> *ranges) {
 vector<Job> Instance::GetReadyJobs(int moment) {
 
   vector <Job> ready_jobs;
-
+  
   for(int i = jobs.size() - 1; i >= 0; i--) {
     if(jobs[i].ready_time <= moment) {
       ready_jobs.push_back(jobs[i]);
@@ -36,3 +38,11 @@ vector<Job> Instance::GetReadyJobs(int moment) {
   return ready_jobs;
 }
 
+void Instance::SortJobs() {
+
+  sort(jobs.begin(), jobs.end(), compareReadyTime);
+}
+
+int compareReadyTime(Job a, Job b) {
+  return (a.ready_time > b.ready_time);
+}

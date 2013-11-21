@@ -2,12 +2,11 @@
 #define INSTANCE_H
 
 #include "Job.h"
-//#include "Range.h"
+#include "Range.h"
 
 #include <vector>
 #include <queue>
 
-#include "Range.h"
 
 using namespace std;
 
@@ -21,6 +20,6 @@ class Instance {
 
 };
 
-int compareReadyTime(Job *a, Job* b);
+int compareReadyTime(Job a, Job b);
 
 #endif

@@ -39,7 +39,15 @@ int main() {
     printf("(main) Wektor zadań w instancji: Zadanie %d [%d | %6d %6d %6d]\n", instancja->jobs[i].id, instancja->jobs[i].ready_time, instancja->jobs[i].operation_times[0], instancja->jobs[i].operation_times[1], instancja->jobs[i].operation_times[2]);
 
   // Tworzenie maszyn
-  Machine *maszyny = new Machine[MACHINES];
+  //Machine *maszyny = new Machine[MACHINES];
+
+  instancja->SortJobs();
+  printf("Sortowanie...\n");
+
+  for(unsigned int i = 0; i < instancja->jobs.size(); i++)
+    printf("(main) Wektor zadań w instancji: Zadanie %d [%d | %6d %6d %6d]\n", instancja->jobs[i].id, instancja->jobs[i].ready_time, instancja->jobs[i].operation_times[0], instancja->jobs[i].operation_times[1], instancja->jobs[i].operation_times[2]);
+
+  // Wyświetlanie gotowości zadań
   for(int i = 0; i <= max_czas_gotowosci; i++) {
     printf("(main) W momencie %d gotowe są zadania:", i);
     vector <Job> gotowe = instancja->GetReadyJobs(i);
@@ -49,8 +57,6 @@ int main() {
     }
     printf("\n");
   }
-
-
 
   return EXIT_SUCCESS;
 }
