@@ -13,8 +13,8 @@ int Job::last_id = 0;
 
 int main() {
 
-  int liczba_przedzialow = 2;
-  int liczba_zadan = 10000;
+  int liczba_przedzialow = 1;
+  int liczba_zadan = 10;
   int max_czas_gotowosci = 10;
 
   srand(time(NULL));
