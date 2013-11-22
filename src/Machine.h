@@ -12,7 +12,7 @@ class Machine {
   public:
     int state;
     Job job;
-    queue <Job*> job_queue;
+    deque <Job> job_queue;
 
     Machine();
 

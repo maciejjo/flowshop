@@ -1,10 +1,10 @@
 TARGET   = flowshop
 
 CC       = g++
-CXXFLAGS = -Wall -Wextra -pedantic
+CXXFLAGS = -Wall -Wextra -pedantic -O2
 
 LINKER   = g++ -o
-LFLAGS   = -Wall -Wextra -pedantic
+LFLAGS   = -Wall -Wextra -pedantic -O2
 SRCDIR   = src
 OBJDIR   = obj
 

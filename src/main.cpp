@@ -14,8 +14,8 @@ int Job::last_id = 0;
 int main() {
 
   int liczba_przedzialow = 1;
-  int liczba_zadan = 10;
-  int max_czas_gotowosci = 10;
+  int liczba_zadan = 1000;
+  int max_czas_gotowosci = 1000;
 
   srand(time(NULL));
 
@@ -58,6 +58,7 @@ int main() {
     printf("\n");
   }
   */
+
 
   instancja->RandomScheduling(maszyny);
   delete[] maszyny;
