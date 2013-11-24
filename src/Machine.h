@@ -10,7 +10,7 @@ using namespace std;
 class Machine {
 
   public:
-    int state;
+    bool state;
     Job job;
     deque <Job> job_queue;
 

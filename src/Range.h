@@ -8,6 +8,7 @@ class Range {
     int max_duration;
     int min_ready_time;
     int max_ready_time;
+    int mean_first_operation;
     Range(int range, int min, int max, int min_ready, int max_ready);
 };
 
