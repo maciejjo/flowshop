@@ -11,23 +11,29 @@ int Job::last_id = 0;
 
 int main() {
 
-  // Parametry
-  int liczba_przedzialow = 1;
-  int liczba_zadan = 100;
-  int max_czas_gotowosci = 10;
-  int liczba_przestojow = 5;
-  int max_czas_przestoju = 200;
-  bool wyswietlanie = 0;
+// Parametry                 
+int liczba_przedzialow = 4;  
+int liczba_zadan = 10;     
+int max_czas_gotowosci = 5;
+int liczba_przestojow = 3;
+int max_czas_przestoju = 2;    
+bool wyswietlanie = 1;       
 
   // Random seed
   srand(time(NULL));
 
   // Generowanie tablic przedziałów
   queue<Range> przedzialy;
-  for(int i = 0; i < liczba_przedzialow; i++ ) {
-    int max_val = pow(10,i+1);
-    przedzialy.push(Range(liczba_zadan / liczba_przedzialow, 1, max_val, 0, max_czas_gotowosci));
-  }
+  
+//  for(int i = 0; i < liczba_przedzialow; i++ ) {
+   // int max_val = pow(10,i+1);
+   // przedzialy.push(Range(liczba_zadan / liczba_przedzialow, 1, max_val, 0, max_czas_gotowosci));
+
+//    przedzialy.push(Range(liczba_zadan / liczba_przedzialow, l_dol, l_gora, 0, max_czas_gotowosci));
+//    przedzialy.push(Range(liczba_zadan / liczba_przedzialow, p_dol, p_gora, 0, max_czas_gotowosci));
+ przedzialy.push(Range(liczba_zadan / liczba_przedzialow, 1, 20, 10, max_czas_gotowosci));
+ // }
+  
 
   // Tworzenie instancji z zadanych przedziałów
   Instance *instancja = new Instance(&przedzialy, wyswietlanie, liczba_przestojow, liczba_zadan, max_czas_przestoju);

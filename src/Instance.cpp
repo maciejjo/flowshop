@@ -50,6 +50,18 @@ int compareReadyTime(Job a, Job b) {
   return (a.ready_time > b.ready_time);
 }
 
+int compareOpTimes0(Job a, Job b) {
+ return (a.operation_times[0] < b.operation_times[0]);
+}
+
+int compareOpTimes1(Job a, Job b) {
+  return (a.operation_times[1] < b.operation_times[1]);
+}
+
+int compareOpTimes2(Job a, Job b) {
+  return (a.operation_times[2] < b.operation_times[2]);
+}
+
 
 int Instance::RandomScheduling(Machine machines[3]) {
 
@@ -237,7 +249,7 @@ int Instance::RandomScheduling(Machine machines[3]) {
 
     if(jobs.empty() && ready_jobs.empty() && machines[0].state == 0 && machines[1].state == 0 && machines[2].state == 0 && stop) {
 
-      printf("Cmax = %d\n", time);
+      printf("%d ", time);
       break;
     }
 
@@ -313,7 +325,13 @@ int Instance::ShortestJobScheduling(Machine machines[3]) {
     for(int i = 0; i < 3; i++) {
       if((machines[i].state == 0) && (machines[i].job_queue.size() > 0 )) {
 
-      sort(machines[i].job_queue.begin(), machines[i].job_queue.end(), compareReadyTime);
+        if(i == 0)
+      sort(machines[i].job_queue.begin(), machines[i].job_queue.end(), compareOpTimes0);
+        if(i == 1)
+      sort(machines[i].job_queue.begin(), machines[i].job_queue.end(), compareOpTimes1);
+
+        if(i == 2)
+      sort(machines[i].job_queue.begin(), machines[i].job_queue.end(), compareOpTimes2);
 
       if(display) {
         printf("(Instance::ShortestJobScheduling)[%d] == Moduł wrzucania zadań na wolną maszynę\n", time);
@@ -438,7 +456,7 @@ int Instance::ShortestJobScheduling(Machine machines[3]) {
 
     if(jobs.empty() && ready_jobs.empty() && machines[0].state == 0 && machines[1].state == 0 && machines[2].state == 0 && stop) {
 
-      printf("Cmax = %d\n", time);
+      printf("%d\n", time);
       break;
     }
 

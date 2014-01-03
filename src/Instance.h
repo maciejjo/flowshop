@@ -31,5 +31,9 @@ class Instance {
 };
 
 int compareReadyTime(Job a, Job b);
+int compareReadyTime(Job a, Job b);
+int compareOpTimes0(Job a, Job b);
+int compareOpTimes1(Job a, Job b);
+int compareOpTimes2(Job a, Job b);
 
 #endif
