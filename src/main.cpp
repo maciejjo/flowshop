@@ -12,10 +12,10 @@ int Job::last_id = 0;
 int main() {
 
 // Parametry                 
-int liczba_przedzialow = 4;  
-int liczba_zadan = 10;     
-int max_czas_gotowosci = 5;
-int liczba_przestojow = 3;
+int liczba_przedzialow = 1;  
+int liczba_zadan = 20;     
+int max_czas_gotowosci = 3;
+int liczba_przestojow = 0;
 int max_czas_przestoju = 2;    
 bool wyswietlanie = 1;       
 
@@ -31,7 +31,7 @@ bool wyswietlanie = 1;
 
 //    przedzialy.push(Range(liczba_zadan / liczba_przedzialow, l_dol, l_gora, 0, max_czas_gotowosci));
 //    przedzialy.push(Range(liczba_zadan / liczba_przedzialow, p_dol, p_gora, 0, max_czas_gotowosci));
- przedzialy.push(Range(liczba_zadan / liczba_przedzialow, 1, 20, 10, max_czas_gotowosci));
+ przedzialy.push(Range(liczba_zadan / liczba_przedzialow, 1, 3, 1, max_czas_gotowosci));
  // }
   
 
@@ -53,9 +53,11 @@ bool wyswietlanie = 1;
 //  instancja->RandomScheduling(maszyny);
   Instance instancja_random = *instancja;
   Instance instancja_sjf = *instancja;
+  Instance instancja_aco = *instancja;
 
   instancja_random.RandomScheduling(maszyny);
   instancja_sjf.ShortestJobScheduling(maszyny);
+  instancja_aco.AcoScheduling(maszyny);
 
 
   // Sprzątanie

@@ -22,9 +22,11 @@ class Instance {
     int mean_operation_time;
 
     Instance(queue<Range> *ranges, bool display, int number_of_halts, int number_of_jobs, int max_halt_time);
+    void ResetInstance();
 
     int RandomScheduling(Machine machines[3]);
     int ShortestJobScheduling(Machine machines[3]);
+    int AcoScheduling(Machine machines[3]);
     vector<Job> GetReadyJobs(int moment);
     void SortJobs();
 

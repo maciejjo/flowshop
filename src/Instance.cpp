@@ -23,9 +23,20 @@ Instance::Instance(queue<Range> *ranges, bool display, int number_of_halts, int 
   this->number_of_halts = number_of_halts;
   this->number_of_jobs = number_of_jobs;
   this->max_halt_time = max_halt_time;
-  this->mean_operation_time = sum_of_first_jobs / number_of_jobs;
+  mean_operation_time = sum_of_first_jobs / number_of_jobs;
 
 }
+
+void Instance::ResetInstance() {
+
+  jobs.erase(jobs.begin(), jobs.end());
+  for(int i = 0; i < number_of_jobs; i++) {
+    jobs.push_back(original_jobs[i]);
+  }
+
+}
+
+
 
 vector<Job> Instance::GetReadyJobs(int moment) {
 
@@ -108,6 +119,8 @@ int Instance::RandomScheduling(Machine machines[3]) {
     vector <Job> ready_jobs = GetReadyJobs(time);
     random_shuffle(ready_jobs.begin(), ready_jobs.end());
 
+    for(int i = 0; i < ready_jobs.size(); i++)
+      printf("gz %d ", ready_jobs[i].id);
     for(int i = ready_jobs.size() - 1; i >= 0; i--) {
 
       machines[0].job_queue.push_back(ready_jobs[i]);
@@ -260,6 +273,295 @@ int Instance::RandomScheduling(Machine machines[3]) {
 
 }
 
+int Instance::AcoScheduling(Machine machines[3]) {
+
+  int task_count = 0;
+  int guaranteed_halt = 0;
+  if(number_of_halts > 0) {
+  guaranteed_halt = number_of_jobs / number_of_halts;
+  }
+  bool force_halt = false;
+  bool was_halt = false;
+  int halts = 0;
+  int halt_left = 0;
+  bool halt_start = 0;
+
+
+  float **pheromone_levels[3];
+
+  for(int i = 0; i < 3; i++) {
+
+    pheromone_levels[i] = (float **) malloc(sizeof(float *) * number_of_jobs + 1);
+
+    for(int j = 0; j < number_of_jobs + 1; j++) {
+      pheromone_levels[i][j] = (float *) malloc(sizeof(float) * number_of_jobs);
+      for(int k = 0; k < number_of_jobs; k++) {
+        pheromone_levels[i][j][k] = 0.0;
+      }
+    }
+  }
+
+  
+
+
+
+  if(display) {
+    printf("(Instance::AcoScheduling) Welcome!\n");
+    printf("(Instance::AcoScheduling) Sortuję zadania...\n");
+  }
+  SortJobs();
+
+  if(display) {
+    printf("(Instance::AcoScheduling) Rozpoczynam pętlę czasu\n");
+  }
+
+  int number_of_ants = 10;
+  vector<Job> old_jobs = this->jobs;
+
+  for(int ants = 0; ants < number_of_ants; ants++) {
+
+    this->jobs = old_jobs;
+
+
+    
+  
+    for(int time = 0;; time++) {
+
+      for(int i = 0; i < 3; i++) {
+        for(int j = 0; j < number_of_jobs + 1; j++) {
+          for(int k = 0; k < number_of_jobs; k++) {
+            printf("%.3f ", pheromone_levels[i][j][k]);
+          }
+          printf("\n");
+        }
+        printf("\n");
+      }
+
+      if(display) {
+        printf("(Instance::AcoScheduling) ======================== \n");
+      }
+
+      if(guaranteed_halt) {
+        int chance = rand() % ( mean_operation_time * guaranteed_halt);
+        if((halts < number_of_halts) && (!chance || force_halt)) {
+
+          was_halt = true;
+          force_halt = false;
+          halt_start = true;
+          halts++;
+          halt_left = (rand() % max_halt_time) + 1;
+        }
+      }
+
+      vector <Job> ready_jobs = GetReadyJobs(time);
+      random_shuffle(ready_jobs.begin(), ready_jobs.end());
+
+      for(int i = ready_jobs.size() - 1; i >= 0; i--) {
+
+        machines[0].job_queue.push_back(ready_jobs[i]);
+        ready_jobs.pop_back();
+
+
+
+        if(display) {
+          printf("(Instance::AcoScheduling)[%d] Zadanie dodano do pierwszej kolejki:\t\t%d[%d|",
+            time, machines[0].job_queue.back().id, machines[0].job_queue.back().ready_time);
+          for(int j = 0; j < 3; j++) printf(" %d", machines[0].job_queue.back().operation_times[j]);
+          printf("]\n");
+        }
+
+      }
+
+
+      for(int i = 0; i < 3; i++) {
+        if((machines[i].state == 0) && (machines[i].job_queue.size() > 0 )) {
+
+        if(display) {
+          printf("(Instance::AcoScheduling)[%d] == Moduł wrzucania zadań na wolną maszynę\n", time);
+          printf("(Instance::AcoScheduling)[%d] --------------------------------------------------------------------------------\n", time);
+
+          printf("(Instance::AcoScheduling)[%d] | Zadanie przechodzi na %d maszynę:\t\t%d[%d|",
+            time, i, machines[i].job_queue.front().id, machines[i].job_queue.front().ready_time);
+          for(int j = 0; j < 3; j++) printf(" %d", machines[i].job_queue.front().operation_times[j]);
+          printf("]\n");
+
+          printf("(Instance::AcoScheduling)[%d] | kolejka %d:\t[ ", time, i);
+          for(int j = 0; j < machines[i].job_queue.size(); j++) printf("%d ", machines[i].job_queue[j].id);
+          printf("]\n");
+        }
+
+          machines[i].state = 1;
+
+          int prev_job = 0;
+          if(!machines[i].virgin) {
+            prev_job = machines[i].job.id;
+          }
+
+          machines[i].job = machines[i].job_queue.front();
+          int current_job = machines[i].job.id;
+
+          
+          int roulette_sum = 0;
+          vector<int> roulette_vector;
+          for(int j = 0; j < machines[i].job_queue.size(); j++) {
+            float current_pheromone = 100 * pheromone_levels[i][current_job][machines[i].job_queue[j].id];
+            printf("[RUL]Dodaję do sumy feromonów [%d] %.3f\n", machines[i].job_queue[j].id, 100 * pheromone_levels[i][current_job][machines[i].job_queue[j].id]);
+            roulette_sum += 100 + (int) current_pheromone;
+            roulette_vector.push_back(roulette_sum);
+          }
+          printf("[RUL]Suma do ruletki: %d\n", roulette_sum);
+          
+          int roulette_choice = rand() % roulette_sum;
+          for(int k = 0; k < roulette_vector.size(); k++) {
+            if(roulette_vector[k] > roulette_choice) {
+              printf("[RUL]Wybrano przedział %d, %d < %d zad. nr. %d \n", roulette_vector[k], 
+                  roulette_vector[k],  roulette_choice, machines[i].job_queue[k].id);
+              printf("%d ", roulette_vector[k]);
+
+              Job tmp_job = machines[i].job_queue.front();
+              machines[i].job_queue.front() = machines[i].job_queue[k];
+              machines[i].job_queue[k] = tmp_job;
+
+              break;
+            }
+          }
+          printf("\n");
+          
+
+      
+          
+          machines[i].job_queue.pop_front();
+
+
+          if(machines[i].virgin) {
+            printf("Dodaję pierwsze zadanie %d\n", current_job);
+            pheromone_levels[i][0][current_job] += 0.5;
+            machines[i].virgin = false;
+          }
+          else {
+            printf("[%d] Dodaję zadanie %d - %d\n", i, prev_job, current_job);
+            pheromone_levels[i][prev_job+1][current_job] += 0.5;
+
+          }
+
+
+          if(i == 0)
+          {
+            task_count++;
+            if(guaranteed_halt > 0) {
+            if(!(task_count % guaranteed_halt)) {
+              if(!was_halt) {
+                force_halt = true;
+              }
+              else
+                was_halt = false;
+              }
+            }
+          }
+
+          if(display) {
+            printf("(Instance::AcoScheduling)[%d] --------------------------------------------------------------------------------\n", time);
+          }
+        }
+      }
+
+      for(int i = 0; i < 3; i++) {
+        if((machines[i].state == 1) && (machines[i].job.operation_times[i] == 0)) {
+
+          if(display) {
+            printf("(Instance::AcoScheduling)[%d] == Moduł przekładający zadania na kolejki\n", time);
+            printf("(Instance::AcoScheduling)[%d] --------------------------------------------------------------------------------\n", time);
+
+            printf("(Instance::AcoScheduling)[%d] | Zadanie zakończone na maszynie %d:\t\t%d[%d|",
+              time, i, machines[i].job.id, machines[i].job.ready_time);
+            for(int j = 0; j < 3; j++) printf(" %d", machines[i].job.operation_times[j]);
+            printf("]\n");
+          }
+
+          machines[i].state = 0;
+          if(i < 2) {
+            machines[i+1].job_queue.push_back(machines[i].job);
+
+
+            if(display) {
+              printf("(Instance::AcoScheduling)[%d] | Zadanie przechodzi do kolejki %d:\t\t%d[%d|",
+                time, i+1, machines[i+1].job_queue.front().id, machines[i+1].job_queue.front().ready_time);
+              for(int j = 0; j < 3; j++) printf(" %d", machines[i+1].job_queue.front().operation_times[j]);
+              printf("]\n");
+              printf("(Instance::AcoScheduling)[%d] | kolejka %d:\t[ ", time, i+1);
+              for(int j = 0; j < machines[i+1].job_queue.size(); j++) printf("%d ", machines[i+1].job_queue[j].id);
+              printf("]\n");
+            }
+
+          }
+
+          if(display) {
+            printf("(Instance::AcoScheduling)[%d] --------------------------------------------------------------------------------\n", time);
+          }
+
+        }
+      }
+
+
+      for(int i = 0; i < 3; i++) {
+        if((machines[i].state == 1) && (machines[i].job.operation_times[i] > 0)) {
+
+          if(display) {
+            printf("(Instance::AcoScheduling)[%d] == Moduł wykonujący zadania\n", time);
+            printf("(Instance::AcoScheduling)[%d] --------------------------------------------------------------------------------\n", time);
+
+            printf("(Instance::AcoScheduling)[%d] | Zadanie wykonuje się na maszynie %d:\t\t%d[%d|",
+              time, i, machines[i].job.id, machines[i].job.ready_time);
+            for(int j = 0; j < 3; j++) printf(" %d", machines[i].job.operation_times[j]);
+            printf("]\n");
+          }
+
+          if(i > 0) {
+            machines[i].job.operation_times[i]--;
+          }
+          else {
+            if(!halt_left) {
+              machines[i].job.operation_times[i]--;
+            }
+            if(halt_start) {
+              machines[0].job.operation_times[0] = original_jobs[task_count].operation_times[0];
+              halt_start = false;
+              machines[0].state = 1;
+            }
+          }
+
+
+          if(display) {
+            printf("(Instance::AcoScheduling)[%d] --------------------------------------------------------------------------------\n", time);
+          }
+        }
+
+      }
+        if(halt_left) {
+          if(display)
+            printf("(Instance::AcoScheduling)[%d] Na maszynie 0 trwa przestój! Pozostało %d...\n", time, halt_left);
+          halt_left--;
+        }
+
+  //    if(jobs.empty() && ready_jobs.empty() && machines[0].state == 0 && machines[1].state == 0 && machines[2].state == 0) break;
+      int stop = 1;
+      for(int i = 0; i < 3; i++) {
+        if(!machines[i].job_queue.empty()) stop = 0;
+      }
+
+      if(jobs.empty() && ready_jobs.empty() && machines[0].state == 0 && machines[1].state == 0 && machines[2].state == 0 && stop) {
+
+        printf("%d ", time);
+        break;
+      }
+
+
+    }
+  }
+
+  return 0;
+
+}
 
 
 
@@ -329,7 +631,6 @@ int Instance::ShortestJobScheduling(Machine machines[3]) {
       sort(machines[i].job_queue.begin(), machines[i].job_queue.end(), compareOpTimes0);
         if(i == 1)
       sort(machines[i].job_queue.begin(), machines[i].job_queue.end(), compareOpTimes1);
-
         if(i == 2)
       sort(machines[i].job_queue.begin(), machines[i].job_queue.end(), compareOpTimes2);
 

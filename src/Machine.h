@@ -11,6 +11,7 @@ class Machine {
 
   public:
     bool state;
+    bool virgin;
     Job job;
     deque <Job> job_queue;
 
