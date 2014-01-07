@@ -26,13 +26,12 @@ class Instance {
 
     int RandomScheduling(Machine machines[3]);
     int ShortestJobScheduling(Machine machines[3]);
-    int AcoScheduling(Machine machines[3]);
-    vector<Job> GetReadyJobs(int moment);
+    int ACOScheduling(Machine machines[3]);
+    vector<Job> GetReadyJobs(int time);
     void SortJobs();
 
 };
 
-int compareReadyTime(Job a, Job b);
 int compareReadyTime(Job a, Job b);
 int compareOpTimes0(Job a, Job b);
 int compareOpTimes1(Job a, Job b);

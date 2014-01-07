@@ -13,11 +13,11 @@ int main() {
 
 // Parametry                 
 int liczba_przedzialow = 1;  
-int liczba_zadan = 20;     
-int max_czas_gotowosci = 3;
+int liczba_zadan = 15;
+int max_czas_gotowosci = 0;
 int liczba_przestojow = 0;
 int max_czas_przestoju = 2;    
-bool wyswietlanie = 1;       
+bool wyswietlanie = 1;
 
   // Random seed
   srand(time(NULL));
@@ -31,7 +31,7 @@ bool wyswietlanie = 1;
 
 //    przedzialy.push(Range(liczba_zadan / liczba_przedzialow, l_dol, l_gora, 0, max_czas_gotowosci));
 //    przedzialy.push(Range(liczba_zadan / liczba_przedzialow, p_dol, p_gora, 0, max_czas_gotowosci));
- przedzialy.push(Range(liczba_zadan / liczba_przedzialow, 1, 3, 1, max_czas_gotowosci));
+ przedzialy.push(Range(liczba_zadan / liczba_przedzialow, 5, 20, 0, 0));
  // }
   
 
@@ -55,9 +55,29 @@ bool wyswietlanie = 1;
   Instance instancja_sjf = *instancja;
   Instance instancja_aco = *instancja;
 
+
+      
+
+
   instancja_random.RandomScheduling(maszyny);
   instancja_sjf.ShortestJobScheduling(maszyny);
-  instancja_aco.AcoScheduling(maszyny);
+  instancja_aco.ACOScheduling(maszyny);
+
+  int suma[4];
+  for(int i = 0; i < 4; i++) suma[i] = 0;
+  for(int i = 0; i < instancja->jobs.size(); i++ ) {
+    printf("[SUM] Zadanie %d", i);
+    for(int j = 0; j < 3; j++) {
+        printf("[SUM] Dodaję %d\n", instancja->jobs[i].operation_times[j]);
+        suma[j] += instancja->jobs[i].operation_times[j];
+        suma[3] += instancja->jobs[i].operation_times[j];
+    }
+  }
+
+
+  for(int i = 0; i < 4; i++) {
+    printf("[SUM %d] %d\n", i, suma[i]);
+  }
 
 
   // Sprzątanie
