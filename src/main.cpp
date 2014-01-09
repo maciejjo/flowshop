@@ -13,7 +13,7 @@ int main() {
 
 // Parametry                 
 int liczba_przedzialow = 1;  
-int liczba_zadan = 15;
+int liczba_zadan = 10;
 int max_czas_gotowosci = 0;
 int liczba_przestojow = 0;
 int max_czas_przestoju = 2;    
@@ -31,7 +31,7 @@ bool wyswietlanie = 1;
 
 //    przedzialy.push(Range(liczba_zadan / liczba_przedzialow, l_dol, l_gora, 0, max_czas_gotowosci));
 //    przedzialy.push(Range(liczba_zadan / liczba_przedzialow, p_dol, p_gora, 0, max_czas_gotowosci));
- przedzialy.push(Range(liczba_zadan / liczba_przedzialow, 5, 20, 0, 0));
+ przedzialy.push(Range(liczba_zadan / liczba_przedzialow, 1, 10, 0, 0));
  // }
   
 

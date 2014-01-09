@@ -21,6 +21,7 @@ class Instance {
     int max_halt_time;
     int mean_operation_time;
 
+    Instance();
     Instance(queue<Range> *ranges, bool display, int number_of_halts, int number_of_jobs, int max_halt_time);
     void ResetInstance();
 

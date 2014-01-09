@@ -1,9 +1,14 @@
 #include "Instance.h"
+#include "Pheromones.h"
+#include "Generation.h"
+#include "Ant.h"
 
 #include <cstdio>
 #include <cstdlib>
 
 #include <algorithm>
+
+Instance::Instance() {};
 
 Instance::Instance(queue<Range> *ranges, bool display, int number_of_halts, 
     int number_of_jobs, int max_halt_time) {
@@ -225,79 +230,44 @@ int Instance::RandomScheduling(Machine machines[3]) {
 
 int Instance::ACOScheduling(Machine machines[3]) {
 
-  int task_count = 0;
-  int guaranteed_halt = 0;
-  if(number_of_halts > 0) {
-  guaranteed_halt = number_of_jobs / number_of_halts;
-  }
-  bool force_halt = false;
-  bool was_halt = false;
-  int halts = 0;
-  int halt_left = 0;
-  bool halt_start = 0;
+  // ACO Parameters
+  int number_of_ants                = 5;
+  int number_of_gens                = 2000;
+  /*
+  float vapor_level                 = 0.01;
+  float pheromone_reward            = 0.9;
+  float better_than_best_multiplier = 2.0;
+  float pheromone_degradation       = 0.1;
+  int prob_rul                      = 100;
+  int start_rul                     = 100;
+  int elite                         = 10;
+  */
+  // ----
 
-  int number_of_ants = 100;
-  int number_of_gens = 100;
-  float vapor_level = 0.5;
-  float **pheromone_levels[3];
-  int best_cmax;
+  Pheromones pheromone_levels(number_of_jobs);
 
-  for(int i = 0; i < 3; i++) {
+  vector<Generation> generations;
+  for(int i = 0; i < number_of_gens; i++)
+    generations.push_back(Generation(number_of_ants, number_of_jobs));
 
-    pheromone_levels[i] = (float **) malloc(sizeof(float *) * number_of_jobs + 1);
-
-    for(int j = 0; j < number_of_jobs + 1; j++) {
-      pheromone_levels[i][j] = (float *) malloc(sizeof(float) * number_of_jobs);
-      for(int k = 0; k < number_of_jobs; k++) {
-        pheromone_levels[i][j][k] = 0.0;
-      }
-    }
-  }
-
-  vector<Job> old_jobs = this->jobs;
-
-
-  
   for(int gen = 0; gen < number_of_gens; gen++) {
+    printf("[TAB %d GEN]\n", gen);
 
-
-    
-    vector<int> cmax_list;
-    
-    
-    int ***job_lists = (int ***) malloc(number_of_ants * sizeof(int **));
+    vector<Ant> ants_vector;
     for(int i = 0; i < number_of_ants; i++) {
-      job_lists[i] = (int **) malloc(number_of_jobs * sizeof(int *));
-      for(int j = 0; j < number_of_jobs; j++) {
-        job_lists[i][j] = (int *) malloc(3 * sizeof(int));
-      }
+      ants_vector.push_back(Ant(this, number_of_ants, number_of_jobs));
     }
     
     for(int ant = 0; ant < number_of_ants; ant++) {
 
-      this->jobs = old_jobs;
-      deque<int> job_list[3];
-
-      SortJobs();
+      ants_vector[ant].instance.SortJobs();
 
       for(int time = 0;; time++) {
 
-      if(guaranteed_halt) {
-        int chance = rand() % (mean_operation_time * guaranteed_halt);
-        if((halts < number_of_halts) && (!chance || force_halt)) {
+      // In every moment get list of ready jobs
+      vector <Job> ready_jobs = ants_vector[ant].instance.GetReadyJobs(time);
 
-          was_halt = true;
-          force_halt = false;
-          halt_start = true;
-          halts++;
-          halt_left = (rand() % max_halt_time) + 1;
-
-        }
-      }
-
-      vector <Job> ready_jobs = GetReadyJobs(time);
-      //random_shuffle(ready_jobs.begin(), ready_jobs.end());
-
+      // Add every ready job to first queue
       for(int i = ready_jobs.size() - 1; i >= 0; i--) {
         machines[0].job_queue.push_back(ready_jobs[i]);
         ready_jobs.pop_back();
@@ -308,77 +278,19 @@ int Instance::ACOScheduling(Machine machines[3]) {
       }
 
 
+      // For every machine, check if free and has jobs waiting
       for(int i = 0; i < 3; i++) {
         if((machines[i].state == 0) && (machines[i].job_queue.size() > 0 )) {
 
-
+          // Set machine i to busy
           machines[i].state = 1;
+
+          // Choose job with roulette 
+          int roulette_job = pheromone_levels.SpinRoulette(machines[i], ants_vector[ant].instance.number_of_jobs, i, 1, 0.5);
+          Job tmp_job = machines[i].job_queue.front();
+          machines[i].job_queue.front() = machines[i].job_queue[roulette_job];
+          machines[i].job_queue[roulette_job] = tmp_job;
           
-          //random_shuffle(machines[i].job_queue.begin(), machines[i].job_queue.end());
-
-
-          if(!machines[i].virgin) {
-            int current_job = machines[i].job.id;
-
-            int roulette_sum = 0;
-            vector<int> roulette_vector;
-            for(int j = 0; j < machines[i].job_queue.size(); j++) {
-              float current_pheromone = 1000 * pheromone_levels[i][current_job][machines[i].job_queue[j].id];
-      //pheromone_levels[maszyna][skąd][dokąd] = 0.0;
-              printf("[RUL %d ]Dodaję do sumy feromonów [%d] %.3f\n", i, machines[i].job_queue[j].id, 10 * pheromone_levels[i][current_job][machines[i].job_queue[j].id]);
-              roulette_sum += 10 + (int) current_pheromone;
-              roulette_vector.push_back(roulette_sum);
-            }
-            printf("[RUL %d]Suma do ruletki: %d\n", i, roulette_sum);
-            
-            int roulette_choice = rand() % roulette_sum;
-            for(int k = 0; k < roulette_vector.size(); k++) {
-              if(roulette_vector[k] > roulette_choice) {
-                printf("[RUL %d]Wybrano przedział %d, %d < %d zad. nr. %d \n", i, roulette_vector[k], 
-                    roulette_vector[k],  roulette_choice, machines[i].job_queue[k].id);
-                printf("%d ", roulette_vector[k]);
-//                job_list[i].push_back(machines[i].job_queue[k].id);
-
-                Job tmp_job = machines[i].job_queue.front();
-                machines[i].job_queue.front() = machines[i].job_queue[k];
-                machines[i].job_queue[k] = tmp_job;
-                break;
-              }
-            }
-            printf("\n");
-          }
-          else {
-
-            //int current_job = machines[i].job.id;
-
-            int roulette_sum = 0;
-            vector<int> roulette_vector;
-            for(int j = 0; j < machines[i].job_queue.size(); j++) {
-              float current_pheromone = 100 * pheromone_levels[i][number_of_jobs][machines[i].job_queue[j].id];
-      //pheromone_levels[maszyna][skąd][dokąd] = 0.0;
-              printf("[RUL %d ]Dodaję do sumy feromonów [%d] %.3f\n", i, machines[i].job_queue[j].id, 100 * pheromone_levels[i][number_of_jobs][machines[i].job_queue[j].id]);
-              roulette_sum += 100 + (int) current_pheromone;
-              roulette_vector.push_back(roulette_sum);
-            }
-            printf("[RUL %d]Suma do ruletki: %d\n", i, roulette_sum);
-            
-            int roulette_choice = rand() % roulette_sum;
-            for(int k = 0; k < roulette_vector.size(); k++) {
-              if(roulette_vector[k] > roulette_choice) {
-                printf("[RUL %d]Wybrano przedział %d, %d < %d zad. nr. %d \n", i, roulette_vector[k], 
-                    roulette_vector[k],  roulette_choice, machines[i].job_queue[k].id);
-                printf("%d ", roulette_vector[k]);
-//                job_list[i].push_back(machines[i].job_queue[k].id);
-
-                Job tmp_job = machines[i].job_queue.front();
-                machines[i].job_queue.front() = machines[i].job_queue[k];
-                machines[i].job_queue[k] = tmp_job;
-                break;
-              }
-            }
-            printf("\n");
-          }
-
           if(display) {
             printf("(Instance::AcoScheduling)[%d] == Moduł wrzucania zadań na wolną maszynę\n", time);
             printf("(Instance::AcoScheduling)[%d] --------------------------------------------------------------------------------\n", time);
@@ -394,53 +306,38 @@ int Instance::ACOScheduling(Machine machines[3]) {
           }
 
           machines[i].job = machines[i].job_queue.front();
-          job_list[i].push_back(machines[i].job_queue.front().id);
+          ants_vector[ant].job_list[i].push_back(machines[i].job_queue.front().id);
 
           machines[i].job_queue.pop_front();
           if(machines[i].virgin)
             machines[i].virgin = false;
 
-            printf("[JOBLIST %d]", i);
-            for(int j = 0; j < job_list[i].size(); j++)
-              printf(" %d", job_list[i][j]);
-            printf("\n");
-
-          if(i == 0)
-          {
-            task_count++;
-            if(guaranteed_halt > 0) {
-            if(!(task_count % guaranteed_halt)) {
-              if(!was_halt) {
-                force_halt = true;
-              }
-              else
-                was_halt = false;
-              }
-            }
-          }
         }
       }
 
+      // For every machine, check if busy and job ended
       for(int i = 0; i < 3; i++) {
         if((machines[i].state == 1) && (machines[i].job.operation_times[i] == 0)) {
 
           if(display) {
-            printf("(Instance::ACOScheduling)[%d] == Moduł przekładający \
-              zadania na kolejki\n", time);
-            printf("(Instance::ACOScheduling)[%d] ----------\n", time);
-
-            printf("(Instance::ACOScheduling)[%d] | Zadanie zakończone na \
-              maszynie %d:\t\t%d[%d|",
+            printf("(Instance::ACOScheduling)[%d] == Moduł przekładający zadania na kolejki\n", time);
+            printf("(Instance::ACOScheduling)[%d] --------------------------------------------------------------------------------\n", time);
+            printf("(Instance::ACOScheduling)[%d] | Zadanie zakończone na maszynie %d:\t\t%d[%d|",
               time, i, machines[i].job.id, machines[i].job.ready_time);
             for(int j = 0; j < 3; j++) printf(" %d", 
                 machines[i].job.operation_times[j]);
             printf("]\n");
           }
 
+          // Set to free
           machines[i].state = 0;
-          if(i < 2) {
-            machines[i+1].job_queue.push_back(machines[i].job);
 
+
+          // For every machine except for last
+          if(i < 2) {
+
+            //Add job to next queue
+            machines[i+1].job_queue.push_back(machines[i].job);
 
             if(display) {
               printf("(Instance::ACOScheduling)[%d] | Zadanie przechodzi do \
@@ -463,6 +360,7 @@ int Instance::ACOScheduling(Machine machines[3]) {
       }
 
 
+      // For every machine check if busy and operation in progress
       for(int i = 0; i < 3; i++) {
         if((machines[i].state == 1) && (machines[i].job.operation_times[i] > 0)) {
 
@@ -476,20 +374,9 @@ int Instance::ACOScheduling(Machine machines[3]) {
             printf("]\n");
           }
 
-          if(i > 0) {
-            machines[i].job.operation_times[i]--;
-          }
-          else {
-            if(!halt_left) {
-              machines[i].job.operation_times[i]--;
-            }
-            if(halt_start) {
-              machines[0].job.operation_times[0] = original_jobs[task_count].operation_times[0];
-              halt_start = false;
-              machines[0].state = 1;
-            }
-          }
 
+          // Shrink remaining operation by one
+          machines[i].job.operation_times[i]--;
 
           if(display) {
             printf("(Instance::ACOScheduling)[%d] --------------------------------------------------------------------------------\n", time);
@@ -497,33 +384,31 @@ int Instance::ACOScheduling(Machine machines[3]) {
         }
 
       }
-        if(halt_left) {
-          if(display)
-            printf("(Instance::ACOScheduling)[%d] Na maszynie 0 trwa przestój! Pozostało %d...\n", time, halt_left);
-          halt_left--;
-        }
 
-  //    if(jobs.empty() && ready_jobs.empty() && machines[0].state == 0 && machines[1].state == 0 && machines[2].state == 0) break;
-      int stop = 1;
+
+      // check if every queue empty
+      bool stop = 1;
       for(int i = 0; i < 3; i++) {
         if(!machines[i].job_queue.empty()) stop = 0;
       }
 
-      if(jobs.empty() && ready_jobs.empty() && machines[0].state == 0 && machines[1].state == 0 && machines[2].state == 0 && stop) {
+      // if every queue empty and all machines idle, end scheduling
+      if(ants_vector[ant].instance.jobs.empty() && ready_jobs.empty() && machines[0].state == 0 && machines[1].state == 0 && machines[2].state == 0 && stop) {
 
-        printf("ACO %d\n", time);
-        
-        
+        //printf("ACO %d ", time);
+
+
         if(ant == 0 and gen == 0)
-          best_cmax = time;
-        else if(time < best_cmax)
-          best_cmax = time;
+          pheromone_levels.best_cmax = time;
 
-        cmax_list.push_back(time);
-        for(int i = 0; i < number_of_jobs; i++) {
+        else if(time < pheromone_levels.best_cmax)
+          pheromone_levels.best_cmax = time;
+
+        generations[gen].cmax_list.push_back(time);
+        for(int i = 0; i < ants_vector[ant].instance.number_of_jobs; i++) {
           for(int j = 0; j < 3; j++) {
-            job_lists[ant][i][j] = job_list[j][i];
-            printf("Ant: %d Job: %d Op: %d = %d\n", ant, i, j, job_lists[ant][i][j]);
+            generations[gen].job_lists[ant][i][j] = ants_vector[ant].job_list[j][i];
+            //printf("Ant: %d Job: %d Op: %d = %d\n", ant, i, j, generations[gen].job_lists[ant][i][j]);
           }
         }
         
@@ -532,122 +417,19 @@ int Instance::ACOScheduling(Machine machines[3]) {
 
 
       }
-
     }
 
-    for(int i = 0; i < number_of_ants; i++) {
-      printf("[%d STATS] Mrówka nr %d, cmax %d, zadania:", gen, i, cmax_list[i]);
-      for(int j = 0; j < number_of_jobs; j++)
-        for(int k = 0; k < 3; k++)
-          printf(" %d", job_lists[i][j][k]);
-      printf("\n");
-    }
-
-
-    bool *ant_evaluated = (bool *) malloc(sizeof(bool) *number_of_ants);
-    for(int i = 0; i < number_of_ants; i++)
-      ant_evaluated[i] = false;
-
-    float pheromone_reward = 99.99;
-    float original_pheromone_reward = 99.99;
-
-    printf("[EVAL]GEN %d\n", gen);
-    for(int i = 0; i < number_of_ants; i++) {
-
-      int min_cmax;
-      int best_ant;
-      int elite = 1;
-      bool cmax_set = false;
-
-      // Szukanie najlepszej mrówki
-      for(int j = 0; j < elite; j++) {
-      //for(int j = 0; j < number_of_ants; j++) 
-
-        if(!ant_evaluated[j]) {
-
-            if(!cmax_set) {
-              printf("[EVAL]Pierwsza nieoceniona mrówka %d, przyjmuję cmax %d\n", j, cmax_list[j]);
-              min_cmax = cmax_list[j];
-              best_ant = j;
-              cmax_set = true;
-            }
-
-            printf("[EVAL %d]Sprawdzam czy %d < %d...\n", j, cmax_list[j], min_cmax);
-            if(cmax_list[j] < min_cmax) {
-              printf("[EVAL]wygrywa mrówka %d: %d < %d\n", j, cmax_list[j], min_cmax);
-              min_cmax = cmax_list[j];
-              best_ant = j;
-            }
-        }
-      }
-
-      printf("[EVAL]Oceniam najlepszą mrówkę: %d\n", best_ant);
-      //pheromone_levels[maszyna][skąd][dokąd] = 0.0;
-      //job_lists[nr_mrówki][nr_zadania][nr_maszyny]
-     //float punish = 0.9;
-     //int elite = 10;
-      for(int j = 0; j < number_of_jobs - 1; j++) {
-      //for(int j = 0; j <elite; j++)
-        for(int k = 0; k < 3; k++) {
-          printf("[EVAL OPUS %d] Skąd: %d, dokąd: %d maszyna: %d nagroda: %.3f\n", i, job_lists[best_ant][j][k], job_lists[best_ant][j+1][k], k, pheromone_reward);
-          
-          if(cmax_list[best_ant] < best_cmax)
-            pheromone_reward *= 200;
-          
-          pheromone_levels[k][job_lists[best_ant][j][k]][job_lists[best_ant][j+1][k]] += pheromone_reward * (1.0 / (float) cmax_list[best_ant]);
-          
-          if(j == 0)
-            pheromone_levels[k][number_of_jobs][job_lists[best_ant][j+1][k]] += pheromone_reward * (1.0 / (float) cmax_list[best_ant]);
-          
-        }
-      }
-
-      //if(cmax_list[i+1] < cmax_list[i])
-      //  pheromone_reward -= original_pheromone_reward / number_of_ants;
-
-      printf("[EVAL OPUS] Nagroda: %.3f %.3f ( / %d) \n", pheromone_reward, original_pheromone_reward / number_of_jobs, number_of_jobs);
-
-      
-      ant_evaluated[best_ant] = true;
-      if(ant_evaluated[best_ant]) printf("Oceniono\n");
-
-    }
-
-    
-    for(int k = 0; k < 3; k++) {
-      for(int i = 0; i < number_of_jobs + 1; i++) {
-        for(int j = 0; j < number_of_jobs; j++) {
-          if(pheromone_levels[k][i][j] >= 0.0)
-           pheromone_levels[k][i][j] -= pheromone_levels[k][i][j] * vapor_level;
-          else
-           pheromone_levels[k][i][j] = 0.0;
-
-        }
-      }
-    }
-  
-
-    printf("[EVAL][MATRIX] ");
-    for(int i = 0; i < number_of_ants; i++) {
-      if(ant_evaluated[i]) printf("1 ", i);
-      else printf("0 ");
+    //pheromone_levels.Evaluate(generations[gen], number_of_ants, number_of_jobs, elite, pheromone_reward, pheromone_degradation, better_than_best_multiplier, vapor_level);
+//  void Pheromones::Evaluate(Generation gen, int number_of_ants, int number_of_jobs, float pec, float q) {
+    pheromone_levels.Evaluate(generations[gen], number_of_ants, number_of_jobs, .987, 0.000013);
+    printf("[%d] ACO", gen);
+    for(int i = 0; i < generations[gen].cmax_list.size(); i++) {
+      printf( " %d", generations[gen].cmax_list[i]);
     }
     printf("\n");
-        
-        for(int i = 0; i < 3; i++) {
-          for(int j = 0; j < number_of_jobs + 1; j++) {
-            for(int k = 0; k < number_of_jobs; k++) {
-              printf("%.3f ", pheromone_levels[i][j][k]);
-            }
-            printf(" [TAB] \n");
-          }
-          printf(" [TAB] \n");
-        }
-
     
     
   }
-  printf("ACO_BEST %d\n", best_cmax);
   return 0;
 
 }

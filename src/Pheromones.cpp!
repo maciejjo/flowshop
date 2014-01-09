@@ -1,0 +1,20 @@
+#include "Pheromones.h"
+
+#include <cstdlib>
+
+  Pheromones::Pheromones(int number_of_jobs) {
+
+  for(int i = 0; i < 3; i++) {
+    pheromone_levels[i] = (float **) malloc(sizeof(float *) * number_of_jobs + 1);
+
+    for(int j = 0; j < number_of_jobs + 1; j++) {
+      pheromone_levels[i][j] = (float *) malloc(sizeof(float) * number_of_jobs);
+      for(int k = 0; k < number_of_jobs; k++) {
+        pheromone_levels[i][j][k] = 0.0;
+      }
+    }
+  }
+
+
+  }
+
